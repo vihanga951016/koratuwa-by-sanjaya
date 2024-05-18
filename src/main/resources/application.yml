@@ -1,0 +1,23 @@
+server:
+  port: 8282
+  servlet:
+    context-path: /koratuwa-app
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    password: asd321
+    username: root
+    url: jdbc:mysql://localhost:3306/koratuwa?serverTimezone=UTC
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+logging:
+  config: classpath:logback.xml
+
+#create this 'C:\\xampp\\htdocs\\img\\koratuwa\\users\\' folder in local disk(C)
+user:
+  profile:
+    storage:
+      path: "C:\\xampp\\htdocs\\img\\koratuwa\\"
