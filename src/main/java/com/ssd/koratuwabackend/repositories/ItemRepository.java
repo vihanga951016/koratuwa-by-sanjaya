@@ -14,5 +14,8 @@ public interface ItemRepository extends JpaRepository<ItemBean, Integer> {
     @Query("SELECT i FROM ItemBean i WHERE i.farmer.id=:id AND i.deleted = false")
     List<ItemBean> getAllItemsByFarmer(@Param("id") Integer id);
 
+    @Query("SELECT i FROM ItemBean i WHERE i.deleted = false")
+    List<ItemBean> getAllItems();
+
     ItemBean getItemBeanById(Integer id);
 }

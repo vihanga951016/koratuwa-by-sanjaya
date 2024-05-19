@@ -19,7 +19,7 @@ public interface UserRepository extends JpaRepository<UserBean, Integer> {
     UserBean getUserBeanByIdAndDeletedIsFalse(Integer id);
 
     @Query("SELECT u FROM UserBean u WHERE u.email=:email AND u.type = 'farmer' " +
-            "and u.registrationApproved = true and u.deleted = false ")
+            "and u.deleted = false ")
     UserBean getFarmerByEmail(String email);
 
     @Query("SELECT u FROM UserBean u WHERE u.email=:email AND u.type = 'customer' " +
@@ -36,14 +36,17 @@ public interface UserRepository extends JpaRepository<UserBean, Integer> {
     @Query("SELECT u FROM UserBean u WHERE u.id=:id and u.deleted = false AND u.type='farmer' AND u.registrationApproved = true")
     UserBean getFarmerData(Integer id);
 
+    @Query("SELECT u FROM UserBean u WHERE u.id=:id and u.deleted = false AND u.type='customer'")
+    UserBean getCustomerData(Integer id);
+
     @Query("SELECT u FROM UserBean u WHERE u.id=:id and u.deleted = false AND u.type='farmer' AND u.registrationApproved = false")
     UserBean getUnregisteredFarmerData(Integer id);
 
-    @Query("SELECT u FROM UserBean u WHERE u.type = 'farmer' and u.registrationApproved = true and u.deleted = false ORDER BY u.id")
-    Page<UserBean> getAllUsers(Pageable pageable);
+    @Query("SELECT u FROM UserBean u WHERE u.type = 'farmer' and u.deleted = false ORDER BY u.id")
+    Page<UserBean> getAllFarmers(Pageable pageable);
 
-    @Query("SELECT u FROM UserBean u WHERE u.type='farmer' and u.registrationApproved = true and u.deleted = false AND u.name LIKE %:searchText% ORDER BY u.id")
-    Page<UserBean> getAllUsers(String searchText, Pageable pageable);
+    @Query("SELECT u FROM UserBean u WHERE u.type='farmer' and u.deleted = false AND u.name LIKE %:searchText% ORDER BY u.id")
+    Page<UserBean> getAllFarmers(String searchText, Pageable pageable);
 
     @Query("SELECT u FROM UserBean u WHERE u.type = 'farmer' and u.registrationApproved = false " +
             "and u.deleted = false ORDER BY u.id")

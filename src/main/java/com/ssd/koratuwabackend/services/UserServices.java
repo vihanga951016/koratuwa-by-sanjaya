@@ -550,10 +550,10 @@ public class UserServices {
             Page<UserBean> reportData;
 
             if (paginateRequest.getSearchText().equals("") && paginateRequest.getSearchText() == null) {
-                reportData = userRepository.getAllUsers(PageRequest.of(paginateRequest.getPage(),
+                reportData = userRepository.getAllFarmers(PageRequest.of(paginateRequest.getPage(),
                         paginateRequest.getSize(), Sort.by(Sorting.getSort(paginateRequest.getSort()))));
             } else {
-                reportData = userRepository.getAllUsers(paginateRequest.getSearchText(), PageRequest.of(paginateRequest.getPage(),
+                reportData = userRepository.getAllFarmers(paginateRequest.getSearchText(), PageRequest.of(paginateRequest.getPage(),
                         paginateRequest.getSize(), Sort.by(Sorting.getSort(paginateRequest.getSort()))));
             }
 
@@ -588,7 +588,7 @@ public class UserServices {
 
             String name = createImageName(id, fileExtension);
 
-            user.setProfilePicture("http://localhost/images/koratuwa/users/" + name);
+            user.setProfilePicture("http://localhost/img/koratuwa/users/" + name);
         }
     }
 

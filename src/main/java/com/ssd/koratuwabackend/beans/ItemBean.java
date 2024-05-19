@@ -39,4 +39,8 @@ public class ItemBean {
     private UserBean farmer;
     private boolean disabled;
     private boolean deleted;
+
+    public ItemBean(Integer id) {
+        this.id = id;
+    }
 }

@@ -18,6 +18,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -43,11 +44,9 @@ public class ItemsService {
     @Value("${user.profile.storage.path}")
     private String profilePath;
 
-    private final AuthService authService;
     private final JwtUserDetailsService jwtUserDetailsService;
 
     private final UserRepository userRepository;
-    private final UserLoginRepository userLoginRepository;
     private final CategoryRepository categoryRepository;
     private final ItemRepository itemRepository;
     private final ItemImagesRepository itemImagesRepository;
@@ -61,8 +60,6 @@ public class ItemsService {
             Claims claims = jwtUserDetailsService.authenticate(request, JwtTypes.user);
 
             Integer claimedUserId = claims.get(ApplicationConstant.JWT_USER_ID, Integer.class);
-
-            logger.info(orderingDate.toString());
 
             UserBean farmer = userRepository.getFarmerData(claimedUserId);
 
@@ -233,6 +230,48 @@ public class ItemsService {
             List<GetItemsResponse> responseList = new ArrayList<>();
 
             List<ItemBean> list = itemRepository.getAllItemsByFarmer(id);
+
+            for (ItemBean item: list) {
+                List<ItemImagesBean> imagesList = itemImagesRepository.getImagesByItemId(item.getId());
+
+                GetItemsResponse getItemsResponse = GetItemsResponse.builder()
+                        .id(item.getId())
+                        .title(item.getTitle())
+                        .categoryId(item.getCategory().getId())
+                        .categoryName(item.getCategory().getName())
+                        .description(item.getDescription())
+                        .unitPrice(item.getUnitPrice())
+                        .totalUnits(item.getTotalUnits())
+                        .bulk(item.isBulk())
+                        .minimumPurchasableUnits(item.getMinimumPurchasableUnits())
+                        .stockAvailable(item.isStockAvailable())
+                        .orderingDate(item.getOrderingDate() != null ? item.getOrderingDate().toString() : null)
+                        .farmerId(item.getFarmer().getId())
+                        .farmerName(item.getFarmer().getName())
+                        .disabled(item.isDisabled())
+                        .deleted(item.isDeleted())
+                        .imagesList(imagesList).build();
+
+                responseList.add(getItemsResponse);
+            }
+
+            return ResponseEntity.ok()
+                    .body(new HttpResponse<>().responseOk(responseList));
+
+        } catch (KoratuwaAppExceptions e) {
+            return ResponseEntity.internalServerError()
+                    .body(new HttpResponse<>().responseFail(e.getMessage()));
+        }
+    }
+
+    public ResponseEntity getAllItems(HttpServletRequest request) {
+        try {
+            jwtUserDetailsService.authenticate(request, JwtTypes.visitor, JwtTypes.user,
+                    JwtTypes.admin);
+
+            List<GetItemsResponse> responseList = new ArrayList<>();
+
+            List<ItemBean> list = itemRepository.getAllItems();
 
             for (ItemBean item: list) {
                 List<ItemImagesBean> imagesList = itemImagesRepository.getImagesByItemId(item.getId());

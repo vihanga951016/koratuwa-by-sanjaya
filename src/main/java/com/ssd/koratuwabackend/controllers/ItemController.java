@@ -43,6 +43,11 @@ public class ItemController {
         return itemsService.getAllItems(id, request);
     }
 
+    @GetMapping("/get-all")
+    public ResponseEntity getItems(HttpServletRequest request) {
+        return itemsService.getAllItems(request);
+    }
+
     @PostMapping("/remove/image/{id}")
     public ResponseEntity removeItemImage(@PathVariable Integer id, HttpServletRequest request) throws IOException {
         return itemsService.removeItmeImage(id, request);

@@ -31,4 +31,8 @@ public class UserBean {
     private boolean registrationApproved;
     private double wallet;
     private boolean deleted;
+
+    public UserBean(Integer id) {
+        this.id = id;
+    }
 }
