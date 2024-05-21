@@ -103,6 +103,7 @@ public class UserServices {
                     .phone(userBean.getPhone())
                     .name(userBean.getName())
                     .role(userBean.getRole())
+                    .picture(userBean.getProfilePicture())
                     .loginTime(savedLoginBean.getLoginTime().toString())
                     .token(savedLoginBean.getToken()).build();
 
@@ -152,6 +153,7 @@ public class UserServices {
                     .email(userBean.getEmail())
                     .phone(userBean.getPhone())
                     .name(userBean.getName())
+                    .picture(userBean.getProfilePicture())
                     .role(userBean.getRole())
                     .loginTime(savedLoginBean.getLoginTime().toString())
                     .token(savedLoginBean.getToken()).build();
@@ -202,6 +204,7 @@ public class UserServices {
                     .email(userBean.getEmail())
                     .phone(userBean.getPhone())
                     .name(userBean.getName())
+                    .picture(userBean.getProfilePicture())
                     .role(userBean.getRole())
                     .loginTime(savedLoginBean.getLoginTime().toString())
                     .token(savedLoginBean.getToken()).build();

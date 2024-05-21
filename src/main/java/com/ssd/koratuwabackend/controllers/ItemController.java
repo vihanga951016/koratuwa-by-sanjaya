@@ -1,5 +1,6 @@
 package com.ssd.koratuwabackend.controllers;
 
+import com.ssd.koratuwabackend.beans.requests.GetItemsRequest;
 import com.ssd.koratuwabackend.services.ItemsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -46,6 +47,21 @@ public class ItemController {
     @GetMapping("/get-all")
     public ResponseEntity getItems(HttpServletRequest request) {
         return itemsService.getAllItems(request);
+    }
+
+    @PostMapping("/get-all/filter")
+    public ResponseEntity getAllItems(@RequestBody GetItemsRequest getItemsRequest, HttpServletRequest request) {
+        return itemsService.getAllItems(getItemsRequest, request);
+    }
+
+    @GetMapping("/get/{id}")
+    public ResponseEntity getItemById(@PathVariable Integer id, HttpServletRequest request) {
+        return itemsService.getItemById(id, request);
+    }
+
+    @PostMapping("/{id}/remove")
+    public ResponseEntity removeItem(@PathVariable Integer id, HttpServletRequest request) throws IOException {
+        return itemsService.removeItem(id, request);
     }
 
     @PostMapping("/remove/image/{id}")

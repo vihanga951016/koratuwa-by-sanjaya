@@ -4,13 +4,13 @@ import com.ssd.koratuwabackend.beans.CategoryBean;
 import com.ssd.koratuwabackend.beans.ItemBean;
 import com.ssd.koratuwabackend.beans.ItemImagesBean;
 import com.ssd.koratuwabackend.beans.UserBean;
+import com.ssd.koratuwabackend.beans.requests.GetItemsRequest;
 import com.ssd.koratuwabackend.beans.responses.GetItemsResponse;
 import com.ssd.koratuwabackend.common.constants.ApplicationConstant;
 import com.ssd.koratuwabackend.common.enums.JwtTypes;
 import com.ssd.koratuwabackend.common.exceptions.KoratuwaAppExceptions;
 import com.ssd.koratuwabackend.common.http.HttpResponse;
 import com.ssd.koratuwabackend.common.security.impls.JwtUserDetailsService;
-import com.ssd.koratuwabackend.common.services.AuthService;
 import com.ssd.koratuwabackend.repositories.*;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -82,9 +82,9 @@ public class ItemsService {
                     .unitPrice(unitPrice)
                     .totalUnits(totalUnits)
                     .bulk(bulk)
-                    .minimumPurchasableUnits(minimumPurchasableUnits)
+                    .minimumPurchasableUnits(bulk ? null : minimumPurchasableUnits)
                     .stockAvailable(stockAvailable)
-                    .orderingDate(orderingDate)
+                    .orderingDate(stockAvailable ? null : orderingDate)
                     .farmer(farmer)
                     .disabled(false)
                     .deleted(false).build();
@@ -169,9 +169,12 @@ public class ItemsService {
 
             if (dbItem.isStockAvailable() != stockAvailable) {
                 dbItem.setStockAvailable(stockAvailable);
+                if (stockAvailable) {
+                    dbItem.setOrderingDate(null);
+                } else {
+                    dbItem.setOrderingDate(orderingDate);
+                }
             }
-
-            dbItem.setOrderingDate(orderingDate);
 
             itemRepository.save(dbItem);
 
@@ -246,8 +249,7 @@ public class ItemsService {
                         .minimumPurchasableUnits(item.getMinimumPurchasableUnits())
                         .stockAvailable(item.isStockAvailable())
                         .orderingDate(item.getOrderingDate() != null ? item.getOrderingDate().toString() : null)
-                        .farmerId(item.getFarmer().getId())
-                        .farmerName(item.getFarmer().getName())
+                        .farmer(item.getFarmer())
                         .disabled(item.isDisabled())
                         .deleted(item.isDeleted())
                         .imagesList(imagesList).build();
@@ -288,8 +290,7 @@ public class ItemsService {
                         .minimumPurchasableUnits(item.getMinimumPurchasableUnits())
                         .stockAvailable(item.isStockAvailable())
                         .orderingDate(item.getOrderingDate() != null ? item.getOrderingDate().toString() : null)
-                        .farmerId(item.getFarmer().getId())
-                        .farmerName(item.getFarmer().getName())
+                        .farmer(item.getFarmer())
                         .disabled(item.isDisabled())
                         .deleted(item.isDeleted())
                         .imagesList(imagesList).build();
@@ -299,6 +300,47 @@ public class ItemsService {
 
             return ResponseEntity.ok()
                     .body(new HttpResponse<>().responseOk(responseList));
+
+        } catch (KoratuwaAppExceptions e) {
+            return ResponseEntity.internalServerError()
+                    .body(new HttpResponse<>().responseFail(e.getMessage()));
+        }
+    }
+
+    public ResponseEntity getItemById(Integer id, HttpServletRequest request) {
+        try {
+            jwtUserDetailsService.authenticate(request, JwtTypes.visitor, JwtTypes.user,
+                    JwtTypes.admin);
+
+            ItemBean item = itemRepository.getItemBeanById(id);
+
+            if (item == null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new HttpResponse<>()
+                        .responseFail("Image not found"));
+            }
+
+            List<ItemImagesBean> imagesList = itemImagesRepository.getImagesByItemId(item.getId());
+
+            GetItemsResponse getItemsResponse = GetItemsResponse.builder()
+                    .id(item.getId())
+                    .title(item.getTitle())
+                    .categoryId(item.getCategory().getId())
+                    .categoryName(item.getCategory().getName())
+                    .description(item.getDescription())
+                    .unitPrice(item.getUnitPrice())
+                    .totalUnits(item.getTotalUnits())
+                    .bulk(item.isBulk())
+                    .minimumPurchasableUnits(item.getMinimumPurchasableUnits())
+                    .stockAvailable(item.isStockAvailable())
+                    .orderingDate(item.getOrderingDate() != null ? item.getOrderingDate().toString() : null)
+                    .farmer(item.getFarmer())
+                    .disabled(item.isDisabled())
+                    .deleted(item.isDeleted())
+                    .imagesList(imagesList).build();
+
+
+            return ResponseEntity.ok()
+                    .body(new HttpResponse<>().responseOk(getItemsResponse));
 
         } catch (KoratuwaAppExceptions e) {
             return ResponseEntity.internalServerError()
@@ -345,6 +387,107 @@ public class ItemsService {
             Path previousFilePath = Paths.get(profilePath + "items\\", itemImagesBean.getName());
             Files.delete(previousFilePath);
             itemImagesRepository.deleteById(itemImagesBean.getId());
+        }
+    }
+
+    public ResponseEntity removeItem(Integer id, HttpServletRequest request) throws IOException {
+        try {
+            Claims claims = jwtUserDetailsService.authenticate(request, JwtTypes.user);
+
+            Integer claimedUserId = claims.get(ApplicationConstant.JWT_USER_ID, Integer.class);
+
+            UserBean farmer = userRepository.getFarmerData(claimedUserId);
+
+            if (farmer == null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new HttpResponse<>()
+                        .responseFail("You are not a farmer"));
+            }
+
+            ItemBean itemBean = itemRepository.getItemBeanById(id);
+
+            if (itemBean == null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new HttpResponse<>()
+                        .responseFail("Item not found"));
+            }
+
+            if (!itemBean.getFarmer().getId().equals(claimedUserId)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new HttpResponse<>()
+                        .responseFail("You have no claims to do this task"));
+            }
+
+            List<ItemImagesBean> imagesList = itemImagesRepository.getImagesByItemId(id);
+
+            for (ItemImagesBean image: imagesList) {
+                deleteImage(image);
+
+                itemImagesRepository.deleteById(image.getId());
+            }
+
+            itemRepository.deleteById(id);
+
+            return ResponseEntity.ok()
+                    .body(new HttpResponse<>().responseOk("Item removed"));
+
+        } catch (KoratuwaAppExceptions e) {
+            return ResponseEntity.internalServerError()
+                    .body(new HttpResponse<>().responseFail(e.getMessage()));
+        }
+    }
+
+    public ResponseEntity getAllItems(GetItemsRequest getItemsRequest, HttpServletRequest request) {
+        try {
+            jwtUserDetailsService.authenticate(request, JwtTypes.visitor, JwtTypes.admin, JwtTypes.user);
+
+            List<ItemBean> list;
+
+            if (getItemsRequest.getCategoryId() != null) {
+                if (!getItemsRequest.getFarmerName().equals("") && getItemsRequest.getFarmerName() != null) {
+                    list = itemRepository.getAllItemsFilterFarmerAndCategory(getItemsRequest.isBulk(),
+                            getItemsRequest.getFarmerName(), getItemsRequest.getCategoryId());
+                } else {
+                    list = itemRepository.getAllItemsFilterCategory(getItemsRequest.isBulk(),
+                            getItemsRequest.getCategoryId());
+                }
+            } else {
+                if (!getItemsRequest.getFarmerName().equals("") && getItemsRequest.getFarmerName() != null) {
+                    list = itemRepository.getAllItemsFilterFarmer(getItemsRequest.isBulk(),
+                            getItemsRequest.getFarmerName());
+                } else {
+                    list = itemRepository.getAllItemsFilterNormal(getItemsRequest.isBulk());
+                }
+            }
+
+            List<GetItemsResponse> responseList = new ArrayList<>();
+
+            for (ItemBean item: list) {
+                List<ItemImagesBean> imagesList = itemImagesRepository.getImagesByItemId(item.getId());
+
+                GetItemsResponse getItemsResponse = GetItemsResponse.builder()
+                        .id(item.getId())
+                        .title(item.getTitle())
+                        .categoryId(item.getCategory().getId())
+                        .categoryName(item.getCategory().getName())
+                        .description(item.getDescription())
+                        .unitPrice(item.getUnitPrice())
+                        .totalUnits(item.getTotalUnits())
+                        .bulk(item.isBulk())
+                        .minimumPurchasableUnits(item.getMinimumPurchasableUnits())
+                        .stockAvailable(item.isStockAvailable())
+                        .orderingDate(item.getOrderingDate() != null ? item.getOrderingDate().toString() : null)
+                        .farmer(item.getFarmer())
+                        .disabled(item.isDisabled())
+                        .deleted(item.isDeleted())
+                        .imagesList(imagesList).build();
+
+                responseList.add(getItemsResponse);
+            }
+
+            return ResponseEntity.ok()
+                    .body(new HttpResponse<>().responseOk(responseList));
+
+        } catch (KoratuwaAppExceptions e) {
+            return ResponseEntity.internalServerError()
+                    .body(new HttpResponse<>().responseFail(e.getMessage()));
         }
     }
 }

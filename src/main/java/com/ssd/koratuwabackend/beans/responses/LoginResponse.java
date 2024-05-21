@@ -19,4 +19,5 @@ public class LoginResponse {
     private String role;
     private String loginTime;
     private String token;
+    private String picture;
 }

@@ -58,8 +58,9 @@ public class CategoryService {
                         .responseFail("Category not found"));
             }
 
-            if (!categoryBean.getName().equals("") && categoryBean.getName() != null &&
-                    !categoryBean.getName().equals(existingCategory.getName())) {
+            if (categoryBean.getName() != null
+                    && !categoryBean.getName().equals("")
+                    && !categoryBean.getName().equals(existingCategory.getName())) {
                 existingCategory.setName(categoryBean.getName());
             }
 

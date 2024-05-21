@@ -217,7 +217,12 @@ public class CartService {
 
                 ItemBean itemBean = itemRepository.getItemBeanById(cartItem.getItem().getId());
 
-                itemBean.setTotalUnits(itemBean.getTotalUnits() - orderBean.getQuantity());
+                if (itemBean.getTotalUnits() - orderBean.getQuantity() == 0) {
+                    itemBean.setTotalUnits(itemBean.getTotalUnits() - orderBean.getQuantity());
+                    itemBean.setDeleted(true);
+                } else {
+                    itemBean.setTotalUnits(itemBean.getTotalUnits() - orderBean.getQuantity());
+                }
 
                 itemRepository.save(itemBean);
 
